@@ -20,10 +20,10 @@ typedef enum entity {
     status_event_entity
 } entity;
 
-typedef struct index {
+struct index {
     int id;
     int index;
-} index;
+};
 
 void init_index(FILE *db, entity type, size_t sizeof_struct);
 int find_index(entity type, int id);

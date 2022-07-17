@@ -6,7 +6,7 @@
 
 void init_index(FILE *db, entity type, size_t sizeof_struct) {
     int j = 0; FILE *idx;
-    index i;
+    struct index i;
     if (type == level_entity) {
         idx = connect(MASTER_LEVELS_IDX, "wb");
         level l;
@@ -14,7 +14,7 @@ void init_index(FILE *db, entity type, size_t sizeof_struct) {
         while (fread(&l, sizeof_struct, 1, db) == 1) {
             i.id = l.id;
             i.index = j;
-            fwrite(&i, sizeof(index), 1, idx);
+            fwrite(&i, sizeof(struct index), 1, idx);
             j++;
         }
         disconnect(idx);
@@ -25,7 +25,7 @@ void init_index(FILE *db, entity type, size_t sizeof_struct) {
         while (fread(&m, sizeof_struct, 1, db) == 1) {
             i.id = m.id;
             i.index = j;
-            fwrite(&i, sizeof(index), 1, idx);
+            fwrite(&i, sizeof(struct index), 1, idx);
             j++;
         }
         disconnect(idx);
@@ -36,7 +36,7 @@ void init_index(FILE *db, entity type, size_t sizeof_struct) {
         while (fread(&s, sizeof_struct, 1, db) == 1) {
             i.id = s.id;
             i.index = j;
-            fwrite(&i, sizeof(index), 1, idx);
+            fwrite(&i, sizeof(struct index), 1, idx);
             j++;
         }
         disconnect(idx);
@@ -45,11 +45,11 @@ void init_index(FILE *db, entity type, size_t sizeof_struct) {
 
 int find_index(entity type, int id) {
     FILE *idx;
-    index i;
+    struct index i;
     if (type == level_entity) {
         idx = connect(MASTER_LEVELS_IDX, "rb+");
         fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(index), 1, idx) == 1) {
+        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
             if (i.id == id) {
                 return i.index;
             }
@@ -58,7 +58,7 @@ int find_index(entity type, int id) {
     } else if (type == module_entity) {
         idx = connect(MASTER_MODULES_IDX, "rb+");
         fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(index), 1, idx) == 1) {
+        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
             if (i.id == id) {
                 return i.index;
             }
@@ -67,7 +67,7 @@ int find_index(entity type, int id) {
     } else if (type == status_event_entity) {
         idx = connect(MASTER_STATUS_EVENTS_IDX, "rb+");
         fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(index), 1, idx) == 1) {
+        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
             if (i.id == id) {
                 return i.index;
             }

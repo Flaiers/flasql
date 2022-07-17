@@ -38,9 +38,9 @@ void output_status_event(status_event *s) {
                                s->status_change_time);
 }
 
-void iindex(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_id)(void *)) {
+void iindex(FILE *db, entity type, size_t sizeof_entity, void *e, int (*get_id)(void *)) {
     int i = 0;
-    index indx;
+    struct index indx;
     FILE *idx = NULL;
     if (type == level_entity) {
         idx = connect(MASTER_LEVELS_IDX, "wb");
@@ -50,10 +50,10 @@ void iindex(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_i
         idx = connect(MASTER_STATUS_EVENTS_IDX, "wb");
     }
     fseek(db, 0, SEEK_SET);
-    while (fread(data, sizeof_entity, 1, db) == 1) {
-        indx.id = get_id(data);
+    while (fread(e, sizeof_entity, 1, db) == 1) {
+        indx.id = get_id(e);
         indx.index = i;
-        fwrite(&indx, sizeof(index), 1, idx);
+        fwrite(&indx, sizeof(struct index), 1, idx);
         i++;
     }
     disconnect(idx);
@@ -61,7 +61,7 @@ void iindex(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_i
 
 int findex(entity type, int id) {
     int i = -1;
-    index indx;
+    struct index indx;
     FILE *idx = NULL;
     if (type == level_entity) {
         idx = connect(MASTER_LEVELS_IDX, "rb+");
@@ -71,7 +71,7 @@ int findex(entity type, int id) {
         idx = connect(MASTER_STATUS_EVENTS_IDX, "rb+");
     }
     fseek(idx, 0, SEEK_SET);
-    while (fread(&indx, sizeof(index), 1, idx) == 1) {
+    while (fread(&indx, sizeof(struct index), 1, idx) == 1) {
         if (indx.id == id) {
             i = indx.index;
             break;
@@ -81,17 +81,17 @@ int findex(entity type, int id) {
     return i;
 }
 
-void *sel(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_id)(void *), int id) {
+void *sel(FILE *db, entity type, size_t sizeof_entity, void *e, int (*get_id)(void *), int id) {
     int index = findex(type, id);
     if (index != -1) {
         fseek(db, index * sizeof_entity, SEEK_SET);
-        fread(data, sizeof_entity, 1, db);
-        return data;
+        fread(e, sizeof_entity, 1, db);
+        return e;
     } else {
         fseek(db, 0, SEEK_SET);
-        while (fread(data, sizeof_entity, 1, db) == 1) {
-            if (get_id(data) == id) {
-                return data;
+        while (fread(e, sizeof_entity, 1, db) == 1) {
+            if (get_id(e) == id) {
+                return e;
             }
         }
     }
@@ -101,8 +101,8 @@ void *sel(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_id)
 void test_levels() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
-    iindex(db, level_entity, l, sizeof(level), get_level_id);
-    l = sel(db, level_entity, l, sizeof(level), get_level_id, 1);
+    iindex(db, level_entity, sizeof(level), l, get_level_id);
+    l = sel(db, level_entity, sizeof(level), l, get_level_id, 1);
     if (l == NULL) {
         printf("Level not found\n");
     } else {
@@ -115,8 +115,8 @@ void test_levels() {
 void test_modules() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
-    iindex(db, module_entity, m, sizeof(module), get_module_id);
-    m = sel(db, module_entity, m, sizeof(module), get_module_id, 1);
+    iindex(db, module_entity, sizeof(module), m, get_module_id);
+    m = sel(db, module_entity, sizeof(module), m, get_module_id, 1);
     if (m == NULL) {
         printf("Module not found\n");
     } else {
@@ -129,8 +129,8 @@ void test_modules() {
 void test_status_events() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
-    iindex(db, status_event_entity, s, sizeof(status_event), get_status_event_id);
-    s = sel(db, status_event_entity, s, sizeof(status_event), get_status_event_id, 1);
+    iindex(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+    s = sel(db, status_event_entity, sizeof(status_event), s, get_status_event_id, 1);
     if (s == NULL) {
         printf("Status event not found\n");
     } else {
