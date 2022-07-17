@@ -8,12 +8,27 @@ int get_level_id(void *e) {
     return ((level*)e)->id;
 }
 
+int set_level_id(void *e, int id) {
+    ((level*)e)->id = id;
+    return id;
+}
+
 int get_module_id(void *e) {
     return ((module*)e)->id;
 }
 
+int set_module_id(void *e, int id) {
+    ((module*)e)->id = id;
+    return id;
+}
+
 int get_status_event_id(void *e) {
     return ((status_event*)e)->id;
+}
+
+int set_status_event_id(void *e, int id) {
+    ((status_event*)e)->id = id;
+    return id;
 }
 
 void output_level(level *l) {
@@ -81,7 +96,7 @@ int findex(entity type, int id) {
     return i;
 }
 
-void *sel(FILE *db, entity type, size_t sizeof_entity, void *e, int (*get_id)(void *), int id) {
+void *sel(FILE *db, entity type, size_t sizeof_entity, void *e, int id, int (*get_id)(void *)) {
     int index = findex(type, id);
     if (index != -1) {
         fseek(db, index * sizeof_entity, SEEK_SET);
@@ -98,11 +113,21 @@ void *sel(FILE *db, entity type, size_t sizeof_entity, void *e, int (*get_id)(vo
     return NULL;
 }
 
-void test_levels() {
+int ins(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int (*get_id)(void *), int (*set_id)(void *, int)) {
+    fseek(db, 0, SEEK_SET);
+    fread(e, sizeof_entity, 1, db);
+
+    fseek(db, 0, SEEK_END);
+    set_id(data, (ftell(db) / sizeof_entity) + get_id(e));
+    fwrite(data, sizeof_entity, 1, db);
+    return 1;
+}
+
+void test_sel_levels() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
     iindex(db, level_entity, sizeof(level), l, get_level_id);
-    l = sel(db, level_entity, sizeof(level), l, get_level_id, 1);
+    l = sel(db, level_entity, sizeof(level), l, 1, get_level_id);
     if (l == NULL) {
         printf("Level not found\n");
     } else {
@@ -112,11 +137,11 @@ void test_levels() {
     free(l);
 }
 
-void test_modules() {
+void test_sel_modules() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
     iindex(db, module_entity, sizeof(module), m, get_module_id);
-    m = sel(db, module_entity, sizeof(module), m, get_module_id, 1);
+    m = sel(db, module_entity, sizeof(module), m, 1, get_module_id);
     if (m == NULL) {
         printf("Module not found\n");
     } else {
@@ -126,11 +151,11 @@ void test_modules() {
     free(m);
 }
 
-void test_status_events() {
+void test_sel_status_events() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
     iindex(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
-    s = sel(db, status_event_entity, sizeof(status_event), s, get_status_event_id, 1);
+    s = sel(db, status_event_entity, sizeof(status_event), s, 1, get_status_event_id);
     if (s == NULL) {
         printf("Status event not found\n");
     } else {
@@ -140,9 +165,63 @@ void test_status_events() {
     free(s);
 }
 
+void test_ins_levels() {
+    FILE *db = connect(MASTER_LEVELS_DB, "rb+");
+    level *l = malloc(sizeof(level));
+    level data = {
+        .id = 1,
+        .cell_amount = 10,
+        .protection_flag = 1
+    };
+    int status = ins(db, level_entity, sizeof(level), l, &data, get_level_id, set_level_id);
+    if (status == 0) {
+        printf("Level already exists\n");
+    }
+    disconnect(db);
+    free(l);
+}
+
+void test_ins_modules() {
+    FILE *db = connect(MASTER_MODULES_DB, "rb+");
+    module *m = malloc(sizeof(module));
+    module data = {
+        .name = "Some module 99",
+        .level_id = 1,
+        .cell_id = 1,
+        .deletion_flag = 0
+    };
+    int status = ins(db, module_entity, sizeof(module), m, &data, get_module_id, set_module_id);
+    if (status == 0) {
+        printf("Module already exists\n");
+    }
+    disconnect(db);
+    free(m);
+}
+
+void test_ins_status_events() {
+    FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
+    status_event *s = malloc(sizeof(status_event));
+    status_event data = {
+        .module_id = 1,
+        .module_status = 1,
+        .status_change_date = "18.07.2022",
+        .status_change_time = "02:07:10"
+    };
+    int status = ins(db, status_event_entity, sizeof(status_event), s, &data, get_status_event_id, set_status_event_id);
+    if (status == 0) {
+        printf("Status event already exists\n");
+    }
+    disconnect(db);
+    free(s);
+}
+
 int main() {
-    test_levels();
-    test_modules();
-    test_status_events();
+    test_sel_levels();
+    test_sel_modules();
+    test_sel_status_events();
+
+    test_ins_levels();
+    test_ins_modules();
+    test_ins_status_events();
     return 0;
 }
