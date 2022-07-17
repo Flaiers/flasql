@@ -123,6 +123,26 @@ int ins(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int (*
     return 1;
 }
 
+int upd(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int id, int (*get_id)(void *), int (*set_id)(void *, int)) {
+    set_id(data, id);
+    int index = findex(type, id);
+    if (index != -1) {
+        fseek(db, index * sizeof_entity, SEEK_SET);
+        fwrite(data, sizeof_entity, 1, db);
+        return 1;
+    } else {
+        fseek(db, 0, SEEK_SET);
+        while (fread(e, sizeof_entity, 1, db) == 1) {
+            if (get_id(e) == id) {
+                fseek(db, -sizeof_entity, SEEK_CUR);
+                fwrite(data, sizeof_entity, 1, db);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 void test_sel_levels() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
@@ -176,6 +196,8 @@ void test_ins_levels() {
     int status = ins(db, level_entity, sizeof(level), l, &data, get_level_id, set_level_id);
     if (status == 0) {
         printf("Level already exists\n");
+    } else {
+        printf("Level inserted\n");
     }
     disconnect(db);
     free(l);
@@ -193,6 +215,8 @@ void test_ins_modules() {
     int status = ins(db, module_entity, sizeof(module), m, &data, get_module_id, set_module_id);
     if (status == 0) {
         printf("Module already exists\n");
+    } else {
+        printf("Module inserted\n");
     }
     disconnect(db);
     free(m);
@@ -210,6 +234,63 @@ void test_ins_status_events() {
     int status = ins(db, status_event_entity, sizeof(status_event), s, &data, get_status_event_id, set_status_event_id);
     if (status == 0) {
         printf("Status event already exists\n");
+    } else {
+        printf("Status event inserted\n");
+    }
+    disconnect(db);
+    free(s);
+}
+
+void test_upd_levels() {
+    FILE *db = connect(MASTER_LEVELS_DB, "rb+");
+    level *l = malloc(sizeof(level));
+    level data = {
+        .cell_amount = 10,
+        .protection_flag = 1
+    };
+    int status = upd(db, level_entity, sizeof(level), l, &data, 1, get_level_id, set_level_id);
+    if (status == 0) {
+        printf("Level not found\n");
+    } else {
+        printf("Level updated\n");
+    }
+    disconnect(db);
+    free(l);
+}
+
+void test_upd_modules() {
+    FILE *db = connect(MASTER_MODULES_DB, "rb+");
+    module *m = malloc(sizeof(module));
+    module data = {
+        .name = "Some module 1",
+        .level_id = 10,
+        .cell_id = 10,
+        .deletion_flag = 1
+    };
+    int status = upd(db, module_entity, sizeof(module), m, &data, 1, get_module_id, set_module_id);
+    if (status == 0) {
+        printf("Module not found\n");
+    } else {
+        printf("Module updated\n");
+    }
+    disconnect(db);
+    free(m);
+}
+
+void test_upd_status_events() {
+    FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
+    status_event *s = malloc(sizeof(status_event));
+    status_event data = {
+        .module_id = 10,
+        .module_status = 1,
+        .status_change_date = "18.07.2022",
+        .status_change_time = "02:07:10"
+    };
+    int status = upd(db, status_event_entity, sizeof(status_event), s, &data, 1, get_status_event_id, set_status_event_id);
+    if (status == 0) {
+        printf("Status event not found\n");
+    } else {
+        printf("Status event updated\n");
     }
     disconnect(db);
     free(s);
@@ -220,8 +301,12 @@ int main() {
     test_sel_modules();
     test_sel_status_events();
 
-    test_ins_levels();
-    test_ins_modules();
-    test_ins_status_events();
+    // test_ins_levels();
+    // test_ins_modules();
+    // test_ins_status_events();
+
+    test_upd_levels();
+    test_upd_modules();
+    test_upd_status_events();
     return 0;
 }
