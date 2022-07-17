@@ -1,9 +1,6 @@
 #ifndef SHARED_H
 #define SHARED_H
 
-#undef MAX
-#define MAX 100
-
 #undef MASTER_LEVELS_IDX
 #define MASTER_LEVELS_IDX "master_levels.idx"
 
@@ -22,6 +19,12 @@ typedef enum entity {
     module_entity,
     status_event_entity
 } entity;
+
+typedef struct table {
+    void *value;
+    entity type;
+    size_t size;
+} table;
 
 typedef struct index {
     int id;

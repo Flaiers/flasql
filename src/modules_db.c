@@ -5,26 +5,11 @@
 #include "modules_db.h"
 
 int main(void) {
+    system("clear");
     int table_number = input_table();
     int operation_number = input_operation();
     execute_query(table_number, operation_number);
     return 0;
-}
-
-int input_operation() {
-    char c;
-    int number;
-    system("clear");
-    printf("Please choose one operation:\n"
-           "    1. SELECT\n"
-           "    2. INSERT\n"
-           "    3. UPDATE\n"
-           "    4. DELETE\n"
-           ">> ");
-    if (!scanf("%d%c", &number, &c) || number < 1 || number > 4 || c != '\n') {
-        exit(0);
-    }
-    return number;
 }
 
 int input_table() {
@@ -36,6 +21,21 @@ int input_table() {
            "    3. Status events\n"
            ">> ");
     if (!scanf("%d%c", &number, &c) || number < 1 || number > 3 || c != '\n') {
+        exit(0);
+    }
+    return number;
+}
+
+int input_operation() {
+    char c;
+    int number;
+    printf("Please choose one operation:\n"
+           "    1. SELECT\n"
+           "    2. INSERT\n"
+           "    3. UPDATE\n"
+           "    4. DELETE\n"
+           ">> ");
+    if (!scanf("%d%c", &number, &c) || number < 1 || number > 4 || c != '\n') {
         exit(0);
     }
     return number;
@@ -54,13 +54,13 @@ int input_id(const char *type) {
 
 int input_selected_id() {
     char c;
-    int num = 0;
-    printf("Enter the selected id or -1 to output all of them:\n"
+    int id;
+    printf("Enter the selected id or leave empty to output all of them:\n"
            ">> ");
-    if (!scanf("%d%c", &num, &c) || c != '\n') {
-        return -1;
+    if (!scanf("%d%c", &id, &c) || c != '\n') {
+        id = -1;
     }
-    return num;
+    return id;
 }
 
 module *input_module() {
