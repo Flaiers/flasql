@@ -15,7 +15,9 @@ FILE *connect(const char *db_name, const char *mode) {
 }
 
 void disconnect(FILE *db) {
-    if (db != NULL) {
+    if (db == NULL) {
+        return;
+    } else {
         fclose(db);
     }
 }
