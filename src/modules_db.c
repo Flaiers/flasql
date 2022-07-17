@@ -5,12 +5,9 @@
 #include "modules_db.h"
 
 int main(void) {
+    int table_number = input_table();
     int operation_number = input_operation();
-    if (operation_number > 0 && operation_number < 5) {
-        execute_query(input_table(), operation_number);
-    } else {
-        execute_aggregation_query(operation_number);
-    }
+    execute_query(table_number, operation_number);
     return 0;
 }
 
@@ -23,22 +20,8 @@ int input_operation() {
            "    2. INSERT\n"
            "    3. UPDATE\n"
            "    4. DELETE\n"
-           "    5. Получить все включенные модули\n"
-           "    6. Получить все модули на первом уровне памяти\n"
-           "    7. Получить все активные дополнительные модули (статус последнего модуля равен 1)\n"
-           "    8. Удаление модулей по идентификаторам\n"
-           "    9. Установить защищенный режим для модуля по идентификатору\n"
-           "   10. Перемещение модуля по идентификатору в указанный уровень памяти и ячейку\n"
-           "   11. Установить флаг защиты указанного уровня памяти\n"
-           "   12. Выключить все его включенные дополнительные модули (перевести их статус в 0)\n"
-           "   13. Удалить записи про них (простановкой соответствующего флага в 1)\n"
-           "   14. Главный модуль (c id 0) перевести в защищенный режим (последовательным переводом"
-           " в статус 0, затем 1, затем - 20)\n"
-           "   15. Переместить его в первую ячейку первого уровня памяти с выставлением этому уровню"
-           " флага защищенности 1\n"
-           "   16. Сгенерировать индексные файлы\n"
            ">> ");
-    if (!scanf("%d%c", &number, &c) || number < 1 || number > 16 || c != '\n') {
+    if (!scanf("%d%c", &number, &c) || number < 1 || number > 4 || c != '\n') {
         exit(0);
     }
     return number;
@@ -58,17 +41,6 @@ int input_table() {
     return number;
 }
 
-int input_length() {
-    char c;
-    int length;
-    printf("Enter the length of ids array:\n"
-           ">> ");
-    if (!scanf("%d%c", &length, &c) || c != '\n') {
-        exit(0);
-    }
-    return length;
-}
-
 int input_id(const char *type) {
     char c;
     int id;
@@ -78,18 +50,6 @@ int input_id(const char *type) {
         exit(0);
     }
     return id;
-}
-
-int *input_ids(int ids[MAX], int length) {
-    char c;
-    for (int i = 0; i < length; i++) {
-        printf("Enter the record id:\n"
-               ">> ");
-        if (!scanf("%d%c", &ids[i], &c) || c != '\n') {
-            exit(0);
-        }
-    }
-    return ids;
 }
 
 int input_selected_id() {
@@ -330,86 +290,4 @@ void execute_query(int table_number, int operation_number) {
         }
         disconnect(db);
     }
-}
-
-void execute_aggregation_query(int operation_number) {
-    FILE *level_db = connect(MASTER_LEVELS_DB, "rb+");
-    FILE *module_db = connect(MASTER_MODULES_DB, "rb+");
-    FILE *status_event_db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
-    if (operation_number == 5) {
-        module *modules = select_active_modules(status_event_db, module_db);
-        if (modules != NULL) {
-            for (int i = 0; modules[i].id != -1; i++) {
-                output_module(&modules[i]);
-            }
-        }
-        free(modules);
-    } else if (operation_number == 6) {
-        module *modules = select_modules_by_level_id(module_db, 1);
-        if (modules != NULL) {
-            for (int i = 0; modules[i].id != -1; i++) {
-                output_module(&modules[i]);
-            }
-        }
-        free(modules);
-    } else if (operation_number == 7) {
-        module *modules = select_active_additional_modules(status_event_db, module_db);
-        if (modules != NULL) {
-            for (int i = 0; modules[i].id != -1; i++) {
-                output_module(&modules[i]);
-            }
-        }
-        free(modules);
-    } else if (operation_number == 8) {
-        int length = input_length(), ids[MAX];
-        if (delete_modules_by_ids(module_db, input_ids(ids, length), length)) {
-            printf("Modules deleted\n");
-        } else {
-            printf("Modules not found\n");
-        }
-    } else if (operation_number == 9) {
-        if (set_module_protected_mode(module_db, status_event_db, input_id("record"))) {
-            printf("Module protected mode seted\n");
-        } else {
-            printf("Module not found\n");
-        }
-    } else if (operation_number == 10) {
-        int id = input_id("record"), level_id = input_id("level"), cell_id = input_id("cell");
-        if (move_module_to_level_cell(module_db, id, level_id, cell_id)) {
-            printf("Module moved\n");
-        } else {
-            printf("Module not found\n");
-        }
-    } else if (operation_number == 11) {
-        if (set_level_protection_flag(level_db, input_id("record"))) {
-            printf("Level protection flag seted\n");
-        } else {
-            printf("Level not found\n");
-        }
-    } else if (operation_number == 12) {
-        turn_off_active_additional_modules(status_event_db);
-        printf("Additional modules turned off\n");
-    } else if (operation_number == 13) {
-        delete_active_additional_modules(module_db);
-        printf("Additional modules deleted\n");
-    } else if (operation_number == 14) {
-        if (set_main_module_protected_mode(status_event_db)) {
-            printf("Main module protected mode seted\n");
-        } else {
-            printf("Main module not found\n");
-        }
-    } else if (operation_number == 15) {
-        if (move_main_module_with_protection_flag(module_db, level_db)) {
-            printf("Main module moved\n");
-        } else {
-            printf("Main module not found\n");
-        }
-    } else if (operation_number == 16) {
-        init_index(level_db, level_entity, sizeof(level));
-        init_index(module_db, module_entity, sizeof(module));
-        init_index(status_event_db, status_event_entity, sizeof(status_event));
-    }
-    disconnect(level_db);
-    disconnect(module_db);
-    disconnect(status_event_db);
 }

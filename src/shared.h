@@ -25,7 +25,7 @@ typedef enum entity {
 
 typedef struct index {
     int id;
-    int pos;
+    int index;
 } index;
 
 void init_index(FILE *db, entity type, size_t sizeof_struct);
@@ -35,19 +35,5 @@ void *select(FILE *db, entity type, size_t sizeof_struct, int id);
 int insert(FILE *db, entity type, size_t sizeof_struct, void *entity);
 int update(FILE *db, entity type, size_t sizeof_struct, void *entity, int id);
 int delete(FILE *db, entity type, size_t sizeof_struct, int id);
-
-module *select_active_modules(FILE *status_event_db, FILE *module_db);
-module *select_modules_by_level_id(FILE *db, int level_id);
-module *select_active_additional_modules(FILE *status_event_db, FILE *module_db);
-
-int delete_modules_by_ids(FILE *db, int ids[MAX], int length);
-int set_level_protection_flag(FILE *db, int id);
-int set_module_protected_mode(FILE *module_db, FILE *status_event_db, int id);
-int set_main_module_protected_mode(FILE *db);
-int move_main_module_with_protection_flag(FILE *module_db, FILE *level_db);
-int move_module_to_level_cell(FILE *db, int id, int level_id, int cell_id);
-
-void turn_off_active_additional_modules(FILE *db);
-void delete_active_additional_modules(FILE *db);
 
 #endif

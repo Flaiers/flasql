@@ -10,9 +10,7 @@
 int input_table();
 int input_operation();
 
-int input_length();
 int input_id(const char *type);
-int *input_ids(int ids[MAX], int length);
 int input_selected_id();
 
 level *input_level();
@@ -25,6 +23,5 @@ status_event *input_status_event();
 void output_status_event(status_event *s);
 
 void execute_query(int table_number, int operation_number);
-void execute_aggregation_query(int operation_number);
 
 #endif
