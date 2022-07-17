@@ -4,84 +4,16 @@
 #include "shared.h"
 #include "database.h"
 
-void *convert(table t) {
-    if (t.type == level_entity) {
-        return (level*)t.value;
-    } else if (t.type == module_entity) {
-        return (module*)t.value;
-    } else if (t.type == status_event_entity) {
-        return (status_event*)t.value;
-    }
+int get_level_id(void *e) {
+    return ((level*)e)->id;
 }
 
-int convert_to_id(table t) {
-    if (t.type == level_entity) {
-        return ((level*)t.value)->id;
-    } else if (t.type == module_entity) {
-        return ((module*)t.value)->id;
-    } else if (t.type == status_event_entity) {
-        return ((status_event*)t.value)->id;
-    }
+int get_module_id(void *e) {
+    return ((module*)e)->id;
 }
 
-void iindex(FILE *db, table t) {
-    int i = 0;
-    index indx;
-    FILE *idx = NULL;
-    if (t.type == level_entity) {
-        idx = connect(MASTER_LEVELS_IDX, "wb");
-    } else if (t.type == module_entity) {
-        idx = connect(MASTER_MODULES_IDX, "wb");
-    } else if (t.type == status_event_entity) {
-        idx = connect(MASTER_STATUS_EVENTS_IDX, "wb");
-    }
-    fseek(db, 0, SEEK_SET);
-    while (fread(t.value, t.size, 1, db) == 1) {
-        indx.id = convert_to_id(t);
-        indx.index = i;
-        fwrite(&indx, sizeof(index), 1, idx);
-        i++;
-    }
-    disconnect(idx);
-}
-
-int findex(table t, int id) {
-    int i = -1;
-    index indx;
-    FILE *idx = NULL;
-    if (t.type == level_entity) {
-        idx = connect(MASTER_LEVELS_IDX, "rb+");
-    } else if (t.type == module_entity) {
-        idx = connect(MASTER_MODULES_IDX, "rb+");
-    } else if (t.type == status_event_entity) {
-        idx = connect(MASTER_STATUS_EVENTS_IDX, "rb+");
-    }
-    fseek(idx, 0, SEEK_SET);
-    while (fread(&indx, sizeof(index), 1, idx) == 1) {
-        if (indx.id == id) {
-            i = indx.index;
-            break;
-        }
-    }
-    disconnect(idx);
-    return i;
-}
-
-void *sel(FILE *db, table t, int id) {
-    int index = findex(t, id);
-    if (index != -1) {
-        fseek(db, index * t.size, SEEK_SET);
-        fread(convert(t), t.size, 1, db);
-        return t.value;
-    } else {
-        fseek(db, 0, SEEK_SET);
-        while (fread(convert(t), t.size, 1, db) == 1) {
-            if (convert_to_id(t) == id) {
-                return t.value;
-            }
-        }
-    }
-    return NULL;
+int get_status_event_id(void *e) {
+    return ((status_event*)e)->id;
 }
 
 void output_level(level *l) {
@@ -106,17 +38,74 @@ void output_status_event(status_event *s) {
                                s->status_change_time);
 }
 
+void iindex(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_id)(void *)) {
+    int i = 0;
+    index indx;
+    FILE *idx = NULL;
+    if (type == level_entity) {
+        idx = connect(MASTER_LEVELS_IDX, "wb");
+    } else if (type == module_entity) {
+        idx = connect(MASTER_MODULES_IDX, "wb");
+    } else if (type == status_event_entity) {
+        idx = connect(MASTER_STATUS_EVENTS_IDX, "wb");
+    }
+    fseek(db, 0, SEEK_SET);
+    while (fread(data, sizeof_entity, 1, db) == 1) {
+        indx.id = get_id(data);
+        indx.index = i;
+        fwrite(&indx, sizeof(index), 1, idx);
+        i++;
+    }
+    disconnect(idx);
+}
+
+int findex(entity type, int id) {
+    int i = -1;
+    index indx;
+    FILE *idx = NULL;
+    if (type == level_entity) {
+        idx = connect(MASTER_LEVELS_IDX, "rb+");
+    } else if (type == module_entity) {
+        idx = connect(MASTER_MODULES_IDX, "rb+");
+    } else if (type == status_event_entity) {
+        idx = connect(MASTER_STATUS_EVENTS_IDX, "rb+");
+    }
+    fseek(idx, 0, SEEK_SET);
+    while (fread(&indx, sizeof(index), 1, idx) == 1) {
+        if (indx.id == id) {
+            i = indx.index;
+            break;
+        }
+    }
+    disconnect(idx);
+    return i;
+}
+
+void *sel(FILE *db, entity type, void *data, size_t sizeof_entity, int (*get_id)(void *), int id) {
+    int index = findex(type, id);
+    if (index != -1) {
+        fseek(db, index * sizeof_entity, SEEK_SET);
+        fread(data, sizeof_entity, 1, db);
+        return data;
+    } else {
+        fseek(db, 0, SEEK_SET);
+        while (fread(data, sizeof_entity, 1, db) == 1) {
+            if (get_id(data) == id) {
+                return data;
+            }
+        }
+    }
+    return NULL;
+}
+
 void test_levels() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
-    table t = {
-        .value = l,
-        .type = level_entity,
-        .size = sizeof(level)
-    };
-    iindex(db, t);
-    l = sel(db, t, 1);
-    if (l != NULL) {
+    iindex(db, level_entity, l, sizeof(level), get_level_id);
+    l = sel(db, level_entity, l, sizeof(level), get_level_id, 1);
+    if (l == NULL) {
+        printf("Level not found\n");
+    } else {
         output_level(l);
     }
     disconnect(db);
@@ -126,14 +115,11 @@ void test_levels() {
 void test_modules() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
-    table t = {
-        .value = m,
-        .type = module_entity,
-        .size = sizeof(module)
-    };
-    iindex(db, t);
-    m = sel(db, t, 0);
-    if (m != NULL) {
+    iindex(db, module_entity, m, sizeof(module), get_module_id);
+    m = sel(db, module_entity, m, sizeof(module), get_module_id, 1);
+    if (m == NULL) {
+        printf("Module not found\n");
+    } else {
         output_module(m);
     }
     disconnect(db);
@@ -143,14 +129,11 @@ void test_modules() {
 void test_status_events() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
-    table t = {
-        .value = s,
-        .type = status_event_entity,
-        .size = sizeof(status_event)
-    };
-    iindex(db, t);
-    s = sel(db, t, 0);
-    if (s != NULL) {
+    iindex(db, status_event_entity, s, sizeof(status_event), get_status_event_id);
+    s = sel(db, status_event_entity, s, sizeof(status_event), get_status_event_id, 1);
+    if (s == NULL) {
+        printf("Status event not found\n");
+    } else {
         output_status_event(s);
     }
     disconnect(db);

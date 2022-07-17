@@ -20,12 +20,6 @@ typedef enum entity {
     status_event_entity
 } entity;
 
-typedef struct table {
-    void *value;
-    entity type;
-    size_t size;
-} table;
-
 typedef struct index {
     int id;
     int index;
