@@ -21,7 +21,7 @@ int input_table() {
            "    3. Status events\n"
            ">> ");
     if (!scanf("%d%c", &number, &c) || number < 1 || number > 3 || c != '\n') {
-        exit(0);
+        return -1;
     }
     return number;
 }
@@ -36,7 +36,7 @@ int input_operation() {
            "    4. DELETE\n"
            ">> ");
     if (!scanf("%d%c", &number, &c) || number < 1 || number > 4 || c != '\n') {
-        exit(0);
+        return -1;
     }
     return number;
 }
@@ -47,7 +47,7 @@ int input_id(const char *type) {
     printf("Enter the %s id:\n"
            ">> ", type);
     if (!scanf("%d%c", &id, &c) || c != '\n') {
-        exit(0);
+        return -1;
     }
     return id;
 }
@@ -65,30 +65,29 @@ int input_selected_id() {
 
 module *input_module(module *m) {
     if (m == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
+        return NULL;
     }
     char c;
     printf("Enter the attributes for the module:\n"
            ">> name: ");
 
     if (!scanf("%29s%c", m->name, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> level_id: ");
     if (!scanf("%d%c", &m->level_id, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> cell_id: ");
     if (!scanf("%d%c", &m->cell_id, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> deletion_flag: ");
     if (!scanf("%d%c", &m->deletion_flag, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
     return m;
 }
@@ -103,19 +102,18 @@ void output_module(module *m) {
 
 level *input_level(level *l) {
     if (l == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
+        return NULL;
     }
     char c;
     printf("Enter the attributes for the level:\n"
            ">> cell_amount: ");
     if (!scanf("%d%c", &l->cell_amount, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> protection_flag: ");
     if (!scanf("%d%c", &l->protection_flag, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
     return l;
 }
@@ -129,33 +127,32 @@ void output_level(level *l) {
 status_event *input_status_event(status_event *s) {
     struct tm *t = malloc(sizeof(struct tm));
     if (s == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
+        return NULL;
     }
     char c;
     printf("Enter the attributes for the status event:\n"
            ">> module_id: ");
     if (!scanf("%d%c", &s->module_id, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> module_status: ");
     if (!scanf("%d%c", &s->module_status, &c) || c != '\n') {
-        exit(0);
+        return NULL;
     }
 
     printf(">> status_change_date: ");
     if ((scanf("%d.%d.%d%c", &t->tm_mday, &t->tm_mon, &t->tm_year, &c) == 4) && c == '\n') {
         strftime(s->status_change_date, 11, "%d.%m.%Y", t);
     } else {
-        exit(0);
+        return NULL;
     }
 
     printf(">> status_change_time: ");
     if ((scanf("%d:%d:%d%c", &t->tm_hour, &t->tm_min, &t->tm_sec, &c) == 4) && c == '\n') {
         strftime(s->status_change_time, 9, "%H:%M:%S", t);
     } else {
-        exit(0);
+        return NULL;
     }
 
     free(t);
@@ -171,132 +168,106 @@ void output_status_event(status_event *s) {
 }
 
 void execute_query(int table_number, int operation_number) {
+    FILE *db = NULL;
     if (table_number == 1) {
-        FILE *db = connect(MASTER_MODULES_DB, "rb+");
+        db = connect(MASTER_MODULES_DB, "rb+");
+        if (db == NULL) {
+            printf("Error db connection\n");
+            return;
+        }
+        module *m = malloc(sizeof(module));
+        if (m == NULL) {
+            printf("Error allocating memory\n");
+            return;
+        }
         if (operation_number == 1) {
-            module *m;
-            int number = input_selected_id();
-            if (number != -1) {
-                m = select(db, module_entity, sizeof(module), number);
-                if (m != NULL) {
+            int id = input_selected_id();
+            if (id != -1) {
+                createidx(db, module_entity, sizeof(module), m, get_module_id);
+            }
+            m = select(db, module_entity, sizeof(module), m, id, get_module, get_module_id, set_module_id);
+            if (m == NULL) {
+                printf("Module not found\n");
+            } else {
+                if (id == -1) {
+                    for (int i = 0; m[i].id != -1; i++) {
+                        output_module(&m[i]);
+                    }
+                } else {
                     output_module(m);
                 }
-                free(m);
-            } else {
-                m = select(db, module_entity, sizeof(module), -1);
-                for (int i = 0; m[i].id != -1; i++) {
-                    output_module(&m[i]);
-                }
-                free(m);
             }
         } else if (operation_number == 2) {
-            module *m = malloc(sizeof(module));
-            if (insert(db, module_entity, sizeof(module), input_module(m))) {
-                printf("Module inserted\n");
-            } else {
-                printf("Module already exist\n");
-            }
-            free(m);
         } else if (operation_number == 3) {
-            module *m = malloc(sizeof(module));
-            if (update(db, module_entity, sizeof(module), input_module(m), input_id("record"))) {
-                printf("Module updated\n");
-            } else {
-                printf("Module not found\n");
-            }
-            free(m);
         } else if (operation_number == 4) {
-            if (delete(db, module_entity, sizeof(module), input_id("record"))) {
-                printf("Module deleted\n");
-            } else {
-                printf("Module not found\n");
-            }
         }
-        disconnect(db);
+        free(m);
     } else if (table_number == 2) {
-        FILE *db = connect(MASTER_LEVELS_DB, "rb+");
+        db = connect(MASTER_LEVELS_DB, "rb+");
+        if (db == NULL) {
+            printf("Error db connection\n");
+            return;
+        }
+        level *l = malloc(sizeof(level));
+        if (l == NULL) {
+            printf("Error allocating memory\n");
+            return;
+        }
         if (operation_number == 1) {
-            level *l;
-            int number = input_selected_id();
-            if (number != -1) {
-                l = select(db, level_entity, sizeof(level), number);
-                if (l != NULL) {
+            int id = input_selected_id();
+            if (id != -1) {
+                createidx(db, level_entity, sizeof(level), l, get_level_id);
+            }
+            l = select(db, level_entity, sizeof(level), l, id, get_level, get_level_id, set_level_id);
+            if (l == NULL) {
+                printf("Level not found\n");
+            } else {
+                if (id == -1) {
+                    for (int i = 0; l[i].id != -1; i++) {
+                        output_level(&l[i]);
+                    }
+                } else {
                     output_level(l);
                 }
-                free(l);
-            } else {
-                l = select(db, level_entity, sizeof(level), -1);
-                for (int i = 0; l[i].id != -1; i++) {
-                    output_level(&l[i]);
-                }
-                free(l);
             }
         } else if (operation_number == 2) {
-            level *l = malloc(sizeof(level));
-            if (insert(db, level_entity, sizeof(level), input_level(l))) {
-                printf("Level inserted\n");
-            } else {
-                printf("Level already exist\n");
-            }
-            free(l);
         } else if (operation_number == 3) {
-            level *l = malloc(sizeof(level));
-            if (update(db, level_entity, sizeof(level), input_level(l), input_id("record"))) {
-                printf("Level updated\n");
-            } else {
-                printf("Level not found\n");
-            }
-            free(l);
         } else if (operation_number == 4) {
-            if (delete(db, level_entity, sizeof(level), input_id("record"))) {
-                printf("Level deleted\n");
-            } else {
-                printf("Level not found\n");
-            }
         }
-        disconnect(db);
+        free(l);
     } else if (table_number == 3) {
-        FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
+        db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
+        if (db == NULL) {
+            printf("Error db connection\n");
+            return;
+        }
+        status_event *s = malloc(sizeof(status_event));
+        if (s == NULL) {
+            printf("Error allocating memory\n");
+            return;
+        }
         if (operation_number == 1) {
-            status_event *s;
-            int number = input_selected_id();
-            if (number != -1) {
-                s = select(db, status_event_entity, sizeof(status_event), number);
-                if (s != NULL) {
+            int id = input_selected_id();
+            if (id != -1) {
+                createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+            }
+            s = select(db, status_event_entity, sizeof(status_event), s, id, get_status_event, get_status_event_id, set_status_event_id);
+            if (s == NULL) {
+                printf("Level not found\n");
+            } else {
+                if (id == -1) {
+                    for (int i = 0; s[i].id != -1; i++) {
+                        output_status_event(&s[i]);
+                    }
+                } else {
                     output_status_event(s);
                 }
-                free(s);
-            } else {
-                s = select(db, status_event_entity, sizeof(status_event), -1);
-                for (int i = 0; s[i].id != -1; i++) {
-                    output_status_event(&s[i]);
-                }
-                free(s);
             }
         } else if (operation_number == 2) {
-            status_event *s = malloc(sizeof(status_event));
-            if (insert(db, status_event_entity, sizeof(status_event), input_status_event(s))) {
-                printf("Status event inserted\n");
-            } else {
-                printf("Status event already exist\n");
-            }
-            free(s);
         } else if (operation_number == 3) {
-            status_event *s = malloc(sizeof(status_event));
-            if (update(db, status_event_entity, sizeof(status_event),
-                input_status_event(s), input_id("record"))) {
-                printf("Status event updated\n");
-            } else {
-                printf("Status event not found\n");
-            }
-            free(s);
         } else if (operation_number == 4) {
-            if (delete(db, status_event_entity, sizeof(status_event), input_id("record"))) {
-                printf("Status event deleted\n");
-            } else {
-                printf("Status event not found\n");
-            }
         }
-        disconnect(db);
+        free(s);
     }
+    disconnect(db);
 }

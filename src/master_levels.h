@@ -14,9 +14,9 @@ void *get_level(void *e, int i);
 int get_level_id(void *e);
 int set_level_id(void *e, int id);
 
-level *select_level(FILE *db, level *l, size_t sizeof_struct, int id);
-int delete_level(FILE *db, level *l, size_t sizeof_struct, int id);
-int insert_level(FILE *db, level *l, size_t sizeof_struct, level *entity);
-int update_level(FILE *db, level *l, size_t sizeof_struct, level *entity, int id);
+level *select_level(FILE *db, level *l, int id);
+int insert_level(FILE *db, level *l, level *data);
+int update_level(FILE *db, level *l, level *data, int id);
+int delete_level(FILE *db, level *l, int id);
 
 #endif

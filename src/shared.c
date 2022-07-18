@@ -3,146 +3,143 @@
 
 #include "shared.h"
 #include "database.h"
+#include "master_levels.h"
+#include "master_modules.h"
+#include "master_status_events.h"
 
-void init_index(FILE *db, entity type, size_t sizeof_struct) {
-    int j = 0; FILE *idx;
-    struct index i;
-    if (type == level_entity) {
-        idx = connect(MASTER_LEVELS_IDX, "wb");
-        level l;
-        fseek(db, 0, SEEK_SET);
-        while (fread(&l, sizeof_struct, 1, db) == 1) {
-            i.id = l.id;
-            i.index = j;
-            fwrite(&i, sizeof(struct index), 1, idx);
-            j++;
-        }
-        disconnect(idx);
-    } else if (type == module_entity) {
-        idx = connect(MASTER_MODULES_IDX, "wb");
-        module m;
-        fseek(db, 0, SEEK_SET);
-        while (fread(&m, sizeof_struct, 1, db) == 1) {
-            i.id = m.id;
-            i.index = j;
-            fwrite(&i, sizeof(struct index), 1, idx);
-            j++;
-        }
-        disconnect(idx);
-    } else if (type == status_event_entity) {
-        idx = connect(MASTER_STATUS_EVENTS_IDX, "wb");
-        status_event s;
-        fseek(db, 0, SEEK_SET);
-        while (fread(&s, sizeof_struct, 1, db) == 1) {
-            i.id = s.id;
-            i.index = j;
-            fwrite(&i, sizeof(struct index), 1, idx);
-            j++;
-        }
-        disconnect(idx);
-    }
-}
-
-int find_index(entity type, int id) {
-    FILE *idx;
-    struct index i;
+int getidx(entity type, int id) {
+    int i = -1;
+    struct index indx;
+    FILE *idx = NULL;
     if (type == level_entity) {
         idx = connect(MASTER_LEVELS_IDX, "rb+");
-        fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
-            if (i.id == id) {
-                return i.index;
-            }
-        }
-        disconnect(idx);
     } else if (type == module_entity) {
         idx = connect(MASTER_MODULES_IDX, "rb+");
-        fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
-            if (i.id == id) {
-                return i.index;
-            }
-        }
-        disconnect(idx);
     } else if (type == status_event_entity) {
         idx = connect(MASTER_STATUS_EVENTS_IDX, "rb+");
+    }
+    if (idx != NULL) {
         fseek(idx, 0, SEEK_SET);
-        while (fread(&i, sizeof(struct index), 1, idx) == 1) {
-            if (i.id == id) {
-                return i.index;
+        while (fread(&indx, sizeof(struct index), 1, idx) == 1) {
+            if (indx.id == id) {
+                i = indx.index;
+                break;
             }
         }
-        disconnect(idx);
     }
-    return -1;
+    disconnect(idx);
+    return i;
 }
 
-void *select(FILE *db, entity type, size_t sizeof_struct, int id) {
-    void *instance = malloc(sizeof_struct);
-    if (instance == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
-    }
+void createidx(FILE *db, entity type, size_t sizeof_entity, void *e, int (*getid)(void *)) {
+    int i = 0;
+    struct index indx;
+    FILE *idx = NULL;
     if (type == level_entity) {
-        instance = select_level(db, instance, sizeof_struct, id);
+        idx = connect(MASTER_LEVELS_IDX, "wb");
     } else if (type == module_entity) {
-        instance = select_module(db, instance, sizeof_struct, id);
+        idx = connect(MASTER_MODULES_IDX, "wb");
     } else if (type == status_event_entity) {
-        instance = select_status_event(db, instance, sizeof_struct, id);
+        idx = connect(MASTER_STATUS_EVENTS_IDX, "wb");
     }
-    return instance;
+    if (idx != NULL) {
+        fseek(db, 0, SEEK_SET);
+        while (fread(e, sizeof_entity, 1, db) == 1) {
+            indx.id = getid(e);
+            indx.index = i;
+            fwrite(&indx, sizeof(struct index), 1, idx);
+            i++;
+        }
+    }
+    disconnect(idx);
 }
 
-int delete(FILE *db, entity type, size_t sizeof_struct, int id) {
-    void *instance = malloc(sizeof_struct);
-    if (instance == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
+void *select(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(*get)(void *, int), int (*getid)(void *), int (*setid)(void *, int)) {
+    if (id == -1) {
+        int i = 0;
+        while (fread(get(e, i), sizeof_entity, 1, db) == 1) {
+            i++;
+            e = realloc(e, sizeof_entity * (i + 1));
+            if (e == NULL) {
+                return NULL;
+            }
+        }
+        setid(get(e, i), id);
+        return e;
+    } else {
+        int index = getidx(type, id);
+        if (index != -1) {
+            fseek(db, index * sizeof_entity, SEEK_SET);
+            fread(e, sizeof_entity, 1, db);
+            return e;
+        } else {
+            fseek(db, 0, SEEK_SET);
+            while (fread(e, sizeof_entity, 1, db) == 1) {
+                if (getid(e) == id) {
+                    return e;
+                }
+            }
+        }
+        return NULL;
     }
-    int result = 0;
-    if (type == level_entity) {
-        result = delete_level(db, instance, sizeof_struct, id);
-    } else if (type == module_entity) {
-        result = delete_module(db, instance, sizeof_struct, id);
-    } else if (type == status_event_entity) {
-        result = delete_status_event(db, instance, sizeof_struct, id);
-    }
-    free(instance);
-    return result;
 }
 
-int insert(FILE *db, entity type, size_t sizeof_struct, void *entity) {
-    void *instance = malloc(sizeof_struct);
-    if (instance == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
-    }
-    int result = 0;
-    if (type == level_entity) {
-        result = insert_level(db, instance, sizeof_struct, entity);
-    } else if (type == module_entity) {
-        result = insert_module(db, instance, sizeof_struct, entity);
-    } else if (type == status_event_entity) {
-        result = insert_status_event(db, instance, sizeof_struct, entity);
-    }
-    free(instance);
-    return result;
+int insert(FILE *db, size_t sizeof_entity, void *e, void *data, int (*getid)(void *), int (*setid)(void *, int)) {
+    fseek(db, 0, SEEK_SET);
+    fread(e, sizeof_entity, 1, db);
+
+    fseek(db, 0, SEEK_END);
+    setid(data, (ftell(db) / sizeof_entity) + getid(e));
+    fwrite(data, sizeof_entity, 1, db);
+    return 1;
 }
 
-int update(FILE *db, entity type, size_t sizeof_struct, void *entity, int id) {
-    void *instance = malloc(sizeof_struct);
-    if (instance == NULL) {
-        printf("Error allocating memory\n");
-        exit(0);
+int update(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int id, int (*getid)(void *), int (*setid)(void *, int)) {
+    setid(data, id);
+    int index = getidx(type, id);
+    if (index != -1) {
+        fseek(db, index * sizeof_entity, SEEK_SET);
+        fwrite(data, sizeof_entity, 1, db);
+        return 1;
+    } else {
+        fseek(db, 0, SEEK_SET);
+        while (fread(e, sizeof_entity, 1, db) == 1) {
+            if (getid(e) == id) {
+                fseek(db, -sizeof_entity, SEEK_CUR);
+                fwrite(data, sizeof_entity, 1, db);
+                return 1;
+            }
+        }
     }
-    int result = 0;
+    return 0;
+}
+
+int delete(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(*get)(void *, int), int (*getid)(void *), int (*setid)(void *, int)) {
+    e = select(db, type, sizeof_entity, e, id, get, getid, setid);
+    if (e == NULL) {
+        return 0;
+    } else {
+        e = select(db, type, sizeof_entity, e, -1, get, getid, setid);
+    }
+
+    FILE *rdb = NULL;
     if (type == level_entity) {
-        result = update_level(db, instance, sizeof_struct, entity, id);
+        rdb = connect(MASTER_LEVELS_DB, "wb");
     } else if (type == module_entity) {
-        result = update_module(db, instance, sizeof_struct, entity, id);
+        rdb = connect(MASTER_MODULES_DB, "wb");
     } else if (type == status_event_entity) {
-        result = update_status_event(db, instance, sizeof_struct, entity, id);
+        rdb = connect(MASTER_STATUS_EVENTS_DB, "wb");
     }
-    free(instance);
-    return result;
+    if (rdb == NULL) {
+        return 0;
+    }
+
+    fseek(rdb, 0, SEEK_SET);
+    for (int i = 0; getid(get(e, i)) != -1; i++) {
+        if (getid(get(e, i)) != id) {
+            fwrite(get(e, i), sizeof_entity, 1, rdb);
+        }
+    }
+    disconnect(rdb);
+    return 1;
 }

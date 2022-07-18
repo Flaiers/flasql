@@ -6,18 +6,11 @@
 FILE *connect(const char *db_name, const char *mode) {
     char db_path[256];
     snprintf(db_path, sizeof(db_path), "%s/%s", DIR_DB, db_name);
-    FILE *db = fopen(db_path, mode);
-    if (db == NULL) {
-        printf("Error db connection\n");
-        exit(0);
-    }
-    return db;
+    return fopen(db_path, mode);
 }
 
 void disconnect(FILE *db) {
-    if (db == NULL) {
-        return;
-    } else {
+    if (db != NULL) {
         fclose(db);
     }
 }

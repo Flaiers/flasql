@@ -16,9 +16,9 @@ void *get_status_event(void *e, int i);
 int get_status_event_id(void *e);
 int set_status_event_id(void *e, int id);
 
-status_event *select_status_event(FILE *db, status_event *s, size_t sizeof_struct, int id);
-int delete_status_event(FILE *db, status_event *s, size_t sizeof_struct, int id);
-int insert_status_event(FILE *db, status_event *s, size_t sizeof_struct, status_event *entity);
-int update_status_event(FILE *db, status_event *s, size_t sizeof_struct, status_event *entity, int id);
+status_event *select_status_event(FILE *db, status_event *s, int id);
+int insert_status_event(FILE *db, status_event *s, status_event *data);
+int update_status_event(FILE *db, status_event *s, status_event *data, int id);
+int delete_status_event(FILE *db, status_event *s, int id);
 
 #endif
