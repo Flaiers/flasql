@@ -5,6 +5,19 @@
 #include "database.h"
 #include "master_status_events.h"
 
+void *get_status_event(void *e, int i) {
+    return &((status_event*)e)[i];
+}
+
+int get_status_event_id(void *e) {
+    return ((status_event*)e)->id;
+}
+
+int set_status_event_id(void *e, int id) {
+    ((status_event*)e)->id = id;
+    return id;
+}
+
 status_event *select_status_event(FILE *db, status_event *s, size_t sizeof_struct, int id) {
     if (id == -1) {
         int i = 0;

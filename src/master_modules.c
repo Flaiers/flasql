@@ -5,6 +5,19 @@
 #include "database.h"
 #include "master_modules.h"
 
+void *get_module(void *e, int i) {
+    return &((module*)e)[i];
+}
+
+int get_module_id(void *e) {
+    return ((module*)e)->id;
+}
+
+int set_module_id(void *e, int id) {
+    ((module*)e)->id = id;
+    return id;
+}
+
 module *select_module(FILE *db, module *m, size_t sizeof_struct, int id) {
     if (id == -1) {
         int i = 0;

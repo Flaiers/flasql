@@ -5,6 +5,19 @@
 #include "database.h"
 #include "master_levels.h"
 
+void *get_level(void *e, int i) {
+    return &((level*)e)[i];
+}
+
+int get_level_id(void *e) {
+    return ((level*)e)->id;
+}
+
+int set_level_id(void *e, int id) {
+    ((level*)e)->id = id;
+    return id;
+}
+
 level *select_level(FILE *db, level *l, size_t sizeof_struct, int id) {
     if (id == -1) {
         int i = 0;

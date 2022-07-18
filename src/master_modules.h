@@ -12,6 +12,10 @@ typedef struct module {
     int deletion_flag;
 } module;
 
+void *get_module(void *e, int i);
+int get_module_id(void *e);
+int set_module_id(void *e, int id);
+
 module *select_module(FILE *db, module *m, size_t sizeof_struct, int id);
 int delete_module(FILE *db, module *m, size_t sizeof_struct, int id);
 int insert_module(FILE *db, module *m, size_t sizeof_struct, module *entity);

@@ -13,13 +13,13 @@ int input_operation();
 int input_id(const char *type);
 int input_selected_id();
 
-level *input_level();
+level *input_level(level *l);
 void output_level(level *l);
 
-module *input_module();
-void output_module(module *l);
+module *input_module(module *m);
+void output_module(module *m);
 
-status_event *input_status_event();
+status_event *input_status_event(status_event *s);
 void output_status_event(status_event *s);
 
 void execute_query(int table_number, int operation_number);

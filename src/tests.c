@@ -4,45 +4,6 @@
 #include "shared.h"
 #include "database.h"
 
-void *get_level(void *e, int i) {
-    return &((level*)e)[i];
-}
-
-int get_level_id(void *e) {
-    return ((level*)e)->id;
-}
-
-int set_level_id(void *e, int id) {
-    ((level*)e)->id = id;
-    return id;
-}
-
-void *get_module(void *e, int i) {
-    return &((module*)e)[i];
-}
-
-int get_module_id(void *e) {
-    return ((module*)e)->id;
-}
-
-int set_module_id(void *e, int id) {
-    ((module*)e)->id = id;
-    return id;
-}
-
-void *get_status_event(void *e, int i) {
-    return &((status_event*)e)[i];
-}
-
-int get_status_event_id(void *e) {
-    return ((status_event*)e)->id;
-}
-
-int set_status_event_id(void *e, int id) {
-    ((status_event*)e)->id = id;
-    return id;
-}
-
 void output_level(level *l) {
     printf("%d %d %d\n", l->id,
                          l->cell_amount,
@@ -65,7 +26,7 @@ void output_status_event(status_event *s) {
                                s->status_change_time);
 }
 
-void iindex(FILE *db, entity type, size_t sizeof_entity, void *e, int (*getid)(void *)) {
+void createidx(FILE *db, entity type, size_t sizeof_entity, void *e, int (*getid)(void *)) {
     int i = 0;
     struct index indx;
     FILE *idx = NULL;
@@ -86,7 +47,7 @@ void iindex(FILE *db, entity type, size_t sizeof_entity, void *e, int (*getid)(v
     disconnect(idx);
 }
 
-int findex(entity type, int id) {
+int getidx(entity type, int id) {
     int i = -1;
     struct index indx;
     FILE *idx = NULL;
@@ -122,7 +83,7 @@ void *sel(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(*
         setid(get(e, i), id);
         return e;
     } else {
-        int index = findex(type, id);
+        int index = getidx(type, id);
         if (index != -1) {
             fseek(db, index * sizeof_entity, SEEK_SET);
             fread(e, sizeof_entity, 1, db);
@@ -151,7 +112,7 @@ int ins(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int (*
 
 int upd(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int id, int (*getid)(void *), int (*setid)(void *, int)) {
     setid(data, id);
-    int index = findex(type, id);
+    int index = getidx(type, id);
     if (index != -1) {
         fseek(db, index * sizeof_entity, SEEK_SET);
         fwrite(data, sizeof_entity, 1, db);
@@ -199,7 +160,6 @@ int del(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(*ge
 void test_sel_levels() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
-    // iindex(db, level_entity, sizeof(level), l, get_level_id);
     l = sel(db, level_entity, sizeof(level), l, -1, get_level, get_level_id, set_level_id);
     for (int i = 0; l[i].id != -1; i++) {
         output_level(&l[i]);
@@ -211,7 +171,6 @@ void test_sel_levels() {
 void test_sel_modules() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
-    // iindex(db, module_entity, sizeof(module), m, get_module_id);
     m = sel(db, module_entity, sizeof(module), m, -1, get_module, get_module_id, set_module_id);
     for (int i = 0; m[i].id != -1; i++) {
         output_module(&m[i]);
@@ -223,7 +182,6 @@ void test_sel_modules() {
 void test_sel_status_events() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
-    // iindex(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
     s = sel(db, status_event_entity, sizeof(status_event), s, -1, get_status_event, get_status_event_id, set_status_event_id);
     for (int i = 0; s[i].id != -1; i++) {
         output_status_event(&s[i]);
@@ -235,7 +193,7 @@ void test_sel_status_events() {
 void test_sel_level() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
-    iindex(db, level_entity, sizeof(level), l, get_level_id);
+    createidx(db, level_entity, sizeof(level), l, get_level_id);
     l = sel(db, level_entity, sizeof(level), l, 1, get_level, get_level_id, set_level_id);
     if (l == NULL) {
         printf("Level not found\n");
@@ -249,7 +207,7 @@ void test_sel_level() {
 void test_sel_module() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
-    iindex(db, module_entity, sizeof(module), m, get_module_id);
+    createidx(db, module_entity, sizeof(module), m, get_module_id);
     m = sel(db, module_entity, sizeof(module), m, 1, get_module, get_module_id, set_module_id);
     if (m == NULL) {
         printf("Module not found\n");
@@ -263,7 +221,7 @@ void test_sel_module() {
 void test_sel_status_event() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
-    iindex(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+    createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
     s = sel(db, status_event_entity, sizeof(status_event), s, 1, get_status_event, get_status_event_id, set_status_event_id);
     if (s == NULL) {
         printf("Status event not found\n");
@@ -333,6 +291,7 @@ void test_ins_status_event() {
 void test_upd_level() {
     FILE *db = connect(MASTER_LEVELS_DB, "rb+");
     level *l = malloc(sizeof(level));
+    createidx(db, level_entity, sizeof(level), l, get_level_id);
     level data = {
         .cell_amount = 10,
         .protection_flag = 1
@@ -350,6 +309,7 @@ void test_upd_level() {
 void test_upd_module() {
     FILE *db = connect(MASTER_MODULES_DB, "rb+");
     module *m = malloc(sizeof(module));
+    createidx(db, module_entity, sizeof(module), m, get_module_id);
     module data = {
         .name = "Some module 1",
         .level_id = 10,
@@ -369,6 +329,7 @@ void test_upd_module() {
 void test_upd_status_event() {
     FILE *db = connect(MASTER_STATUS_EVENTS_DB, "rb+");
     status_event *s = malloc(sizeof(status_event));
+    createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
     status_event data = {
         .module_id = 10,
         .module_status = 1,

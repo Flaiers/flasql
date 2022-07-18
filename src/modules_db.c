@@ -63,8 +63,7 @@ int input_selected_id() {
     return id;
 }
 
-module *input_module() {
-    module *m = malloc(sizeof(module));
+module *input_module(module *m) {
     if (m == NULL) {
         printf("Error allocating memory\n");
         exit(0);
@@ -102,8 +101,7 @@ void output_module(module *m) {
                                m->deletion_flag);
 }
 
-level *input_level() {
-    level *l = malloc(sizeof(level));
+level *input_level(level *l) {
     if (l == NULL) {
         printf("Error allocating memory\n");
         exit(0);
@@ -128,8 +126,7 @@ void output_level(level *l) {
                          l->protection_flag);
 }
 
-status_event *input_status_event() {
-    status_event *s = malloc(sizeof(status_event));
+status_event *input_status_event(status_event *s) {
     struct tm *t = malloc(sizeof(struct tm));
     if (s == NULL) {
         printf("Error allocating memory\n");
@@ -193,17 +190,21 @@ void execute_query(int table_number, int operation_number) {
                 free(m);
             }
         } else if (operation_number == 2) {
-            if (insert(db, module_entity, sizeof(module), input_module())) {
+            module *m = malloc(sizeof(module));
+            if (insert(db, module_entity, sizeof(module), input_module(m))) {
                 printf("Module inserted\n");
             } else {
                 printf("Module already exist\n");
             }
+            free(m);
         } else if (operation_number == 3) {
-            if (update(db, module_entity, sizeof(module), input_module(), input_id("record"))) {
+            module *m = malloc(sizeof(module));
+            if (update(db, module_entity, sizeof(module), input_module(m), input_id("record"))) {
                 printf("Module updated\n");
             } else {
                 printf("Module not found\n");
             }
+            free(m);
         } else if (operation_number == 4) {
             if (delete(db, module_entity, sizeof(module), input_id("record"))) {
                 printf("Module deleted\n");
@@ -231,17 +232,21 @@ void execute_query(int table_number, int operation_number) {
                 free(l);
             }
         } else if (operation_number == 2) {
-            if (insert(db, level_entity, sizeof(level), input_level())) {
+            level *l = malloc(sizeof(level));
+            if (insert(db, level_entity, sizeof(level), input_level(l))) {
                 printf("Level inserted\n");
             } else {
                 printf("Level already exist\n");
             }
+            free(l);
         } else if (operation_number == 3) {
-            if (update(db, level_entity, sizeof(level), input_level(), input_id("record"))) {
+            level *l = malloc(sizeof(level));
+            if (update(db, level_entity, sizeof(level), input_level(l), input_id("record"))) {
                 printf("Level updated\n");
             } else {
                 printf("Level not found\n");
             }
+            free(l);
         } else if (operation_number == 4) {
             if (delete(db, level_entity, sizeof(level), input_id("record"))) {
                 printf("Level deleted\n");
@@ -269,18 +274,22 @@ void execute_query(int table_number, int operation_number) {
                 free(s);
             }
         } else if (operation_number == 2) {
-            if (insert(db, status_event_entity, sizeof(status_event), input_status_event())) {
+            status_event *s = malloc(sizeof(status_event));
+            if (insert(db, status_event_entity, sizeof(status_event), input_status_event(s))) {
                 printf("Status event inserted\n");
             } else {
                 printf("Status event already exist\n");
             }
+            free(s);
         } else if (operation_number == 3) {
+            status_event *s = malloc(sizeof(status_event));
             if (update(db, status_event_entity, sizeof(status_event),
-                input_status_event(), input_id("record"))) {
+                input_status_event(s), input_id("record"))) {
                 printf("Status event updated\n");
             } else {
                 printf("Status event not found\n");
             }
+            free(s);
         } else if (operation_number == 4) {
             if (delete(db, status_event_entity, sizeof(status_event), input_id("record"))) {
                 printf("Status event deleted\n");
