@@ -7,7 +7,13 @@
 int main(void) {
     system("clear");
     int table_number = input_table();
+    if (table_number == -1) {
+        return 0;
+    }
     int operation_number = input_operation();
+    if (operation_number == -1) {
+        return 0;
+    }
     execute_query(table_number, operation_number);
     return 0;
 }
@@ -133,27 +139,29 @@ status_event *input_status_event(status_event *s) {
     printf("Enter the attributes for the status event:\n"
            ">> module_id: ");
     if (!scanf("%d%c", &s->module_id, &c) || c != '\n') {
+        free(t);
         return NULL;
     }
 
     printf(">> module_status: ");
     if (!scanf("%d%c", &s->module_status, &c) || c != '\n') {
+        free(t);
         return NULL;
     }
 
     printf(">> status_change_date: ");
-    if ((scanf("%d.%d.%d%c", &t->tm_mday, &t->tm_mon, &t->tm_year, &c) == 4) && c == '\n') {
-        strftime(s->status_change_date, 11, "%d.%m.%Y", t);
-    } else {
+    if (scanf("%d.%d.%d%c", &t->tm_mday, &t->tm_mon, &t->tm_year, &c) != 4 || c != '\n') {
+        free(t);
         return NULL;
     }
+    strftime(s->status_change_date, 11, "%d.%m.%Y", t);
 
     printf(">> status_change_time: ");
-    if ((scanf("%d:%d:%d%c", &t->tm_hour, &t->tm_min, &t->tm_sec, &c) == 4) && c == '\n') {
-        strftime(s->status_change_time, 9, "%H:%M:%S", t);
-    } else {
+    if (scanf("%d:%d:%d%c", &t->tm_hour, &t->tm_min, &t->tm_sec, &c) != 4 || c != '\n') {
+        free(t);
         return NULL;
     }
+    strftime(s->status_change_time, 9, "%H:%M:%S", t);
 
     free(t);
     return s;
@@ -185,7 +193,7 @@ void execute_query(int table_number, int operation_number) {
             if (id != -1) {
                 createidx(db, module_entity, sizeof(module), m, get_module_id);
             }
-            m = select(db, module_entity, sizeof(module), m, id, get_module, get_module_id, set_module_id);
+            m = select_module(db, m, id);
             if (m == NULL) {
                 printf("Module not found\n");
             } else {
@@ -198,6 +206,15 @@ void execute_query(int table_number, int operation_number) {
                 }
             }
         } else if (operation_number == 2) {
+            module *data = malloc(sizeof(module));
+            data = input_module(data);
+            int status = insert_module(db, m, data);
+            if (status == 0) {
+                printf("Module already exists\n");
+            } else {
+                printf("Module inserted\n");
+            }
+            free(data);
         } else if (operation_number == 3) {
         } else if (operation_number == 4) {
         }
@@ -218,7 +235,7 @@ void execute_query(int table_number, int operation_number) {
             if (id != -1) {
                 createidx(db, level_entity, sizeof(level), l, get_level_id);
             }
-            l = select(db, level_entity, sizeof(level), l, id, get_level, get_level_id, set_level_id);
+            l = select_level(db, l, id);
             if (l == NULL) {
                 printf("Level not found\n");
             } else {
@@ -231,6 +248,15 @@ void execute_query(int table_number, int operation_number) {
                 }
             }
         } else if (operation_number == 2) {
+            level *data = malloc(sizeof(level));
+            data = input_level(data);
+            int status = insert_level(db, l, data);
+            if (status == 0) {
+                printf("Level already exists\n");
+            } else {
+                printf("Level inserted\n");
+            }
+            free(data);
         } else if (operation_number == 3) {
         } else if (operation_number == 4) {
         }
@@ -251,7 +277,7 @@ void execute_query(int table_number, int operation_number) {
             if (id != -1) {
                 createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
             }
-            s = select(db, status_event_entity, sizeof(status_event), s, id, get_status_event, get_status_event_id, set_status_event_id);
+            s = select_status_event(db, s, id);
             if (s == NULL) {
                 printf("Level not found\n");
             } else {
@@ -264,6 +290,15 @@ void execute_query(int table_number, int operation_number) {
                 }
             }
         } else if (operation_number == 2) {
+            status_event *data = malloc(sizeof(status_event));
+            data = input_status_event(data);
+            int status = insert_status_event(db, s, data);
+            if (status == 0) {
+                printf("Status event already exists\n");
+            } else {
+                printf("Status event inserted\n");
+            }
+            free(data);
         } else if (operation_number == 3) {
         } else if (operation_number == 4) {
         }

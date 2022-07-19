@@ -32,5 +32,7 @@ int update_module(FILE *db, module *m, module *data, int id) {
 }
 
 int delete_module(FILE *db, module *m, int id) {
-    return delete(db, module_entity, sizeof(module), m, id, get_module, get_module_id, set_module_id);
+    module *data = select_module(db, m, id);
+    data->deletion_flag = 1;
+    return update_module(db, m, data, id);
 }
