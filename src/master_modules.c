@@ -19,6 +19,9 @@ int set_module_id(void *e, int id) {
 }
 
 module *select_module(FILE *db, module *m, int id) {
+    if (id != -1) {
+        createidx(db, module_entity, sizeof(module), m, get_module_id);
+    }
     return select(db, module_entity, sizeof(module), m, id, get_module, get_module_id, set_module_id);
 }
 
@@ -32,7 +35,13 @@ int update_module(FILE *db, module *m, module *data, int id) {
 }
 
 int delete_module(FILE *db, module *m, int id) {
-    module *data = select_module(db, m, id);
-    data->deletion_flag = 1;
-    return update_module(db, m, data, id);
+    int status = 0;
+    module *data = malloc(sizeof(module));
+    data = select_module(db, data, id);
+    if (data != NULL) {
+        data->deletion_flag = 1;
+        status = update_module(db, m, data, id);
+    }
+    free(data);
+    return status;
 }

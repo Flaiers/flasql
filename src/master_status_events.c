@@ -19,6 +19,9 @@ int set_status_event_id(void *e, int id) {
 }
 
 status_event *select_status_event(FILE *db, status_event *s, int id) {
+    if (id != -1) {
+        createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+    }
     return select(db, status_event_entity, sizeof(status_event), s, id, get_status_event, get_status_event_id, set_status_event_id);
 }
 

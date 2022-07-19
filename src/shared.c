@@ -115,11 +115,9 @@ int update(FILE *db, entity type, size_t sizeof_entity, void *e, void *data, int
 }
 
 int delete(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(*get)(void *, int), int (*getid)(void *), int (*setid)(void *, int)) {
-    e = select(db, type, sizeof_entity, e, id, get, getid, setid);
+    e = select(db, type, sizeof_entity, e, -1, get, getid, setid);
     if (e == NULL) {
         return 0;
-    } else {
-        e = select(db, type, sizeof_entity, e, -1, get, getid, setid);
     }
 
     FILE *rdb = NULL;
@@ -134,12 +132,15 @@ int delete(FILE *db, entity type, size_t sizeof_entity, void *e, int id, void *(
         return 0;
     }
 
+    int status = 0;
     fseek(rdb, 0, SEEK_SET);
     for (int i = 0; getid(get(e, i)) != -1; i++) {
-        if (getid(get(e, i)) != id) {
+        if (getid(get(e, i)) == id) {
+            status = 1;
+        } else {
             fwrite(get(e, i), sizeof_entity, 1, rdb);
         }
     }
     disconnect(rdb);
-    return 1;
+    return status;
 }

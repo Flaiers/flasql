@@ -19,6 +19,9 @@ int set_level_id(void *e, int id) {
 }
 
 level *select_level(FILE *db, level *l, int id) {
+    if (id != -1) {
+        createidx(db, level_entity, sizeof(level), l, get_level_id);
+    }
     return select(db, level_entity, sizeof(level), l, id, get_level, get_level_id, set_level_id);
 }
 

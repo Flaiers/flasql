@@ -190,9 +190,6 @@ void execute_query(int table_number, int operation_number) {
         }
         if (operation_number == 1) {
             int id = input_selected_id();
-            if (id != -1) {
-                createidx(db, module_entity, sizeof(module), m, get_module_id);
-            }
             m = select_module(db, m, id);
             if (m == NULL) {
                 printf("Module not found\n");
@@ -217,14 +214,13 @@ void execute_query(int table_number, int operation_number) {
                 } else {
                     printf("Module inserted\n");
                 }
-                free(data);
             }
+            free(data);
         } else if (operation_number == 3) {
             int id = input_id("module");
             if (id == -1) {
                 printf("Invalid input\n");
             } else {
-                createidx(db, module_entity, sizeof(module), m, get_module_id);
                 if (select_module(db, m, id) == NULL) {
                     printf("Module not found\n");
                 } else {
@@ -239,11 +235,22 @@ void execute_query(int table_number, int operation_number) {
                         } else {
                             printf("Module updated\n");
                         }
-                        free(data);
                     }
+                    free(data);
                 }
             }
         } else if (operation_number == 4) {
+            int id = input_id("module");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                int status = delete_module(db, m, id);
+                if (status == 0) {
+                    printf("Module not found\n");
+                } else {
+                    printf("Module deleted\n");
+                }
+            }
         }
         free(m);
     } else if (table_number == 2) {
@@ -259,9 +266,6 @@ void execute_query(int table_number, int operation_number) {
         }
         if (operation_number == 1) {
             int id = input_selected_id();
-            if (id != -1) {
-                createidx(db, level_entity, sizeof(level), l, get_level_id);
-            }
             l = select_level(db, l, id);
             if (l == NULL) {
                 printf("Level not found\n");
@@ -286,14 +290,13 @@ void execute_query(int table_number, int operation_number) {
                 } else {
                     printf("Level inserted\n");
                 }
-                free(data);
             }
+            free(data);
         } else if (operation_number == 3) {
             int id = input_id("level");
             if (id == -1) {
                 printf("Invalid input\n");
             } else {
-                createidx(db, level_entity, sizeof(level), l, get_level_id);
                 if (select_level(db, l, id) == NULL) {
                     printf("Level not found\n");
                 } else {
@@ -308,11 +311,23 @@ void execute_query(int table_number, int operation_number) {
                         } else {
                             printf("Level updated\n");
                         }
-                        free(data);
                     }
+                    free(data);
                 }
             }
         } else if (operation_number == 4) {
+            int id = input_id("level");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                int status = delete_level(db, l, id);
+                if (status == 0) {
+                    printf("Level not found\n");
+                } else {
+                    printf("Level deleted\n");
+                }
+                createidx(db, level_entity, sizeof(level), l, get_level_id);
+            }
         }
         free(l);
     } else if (table_number == 3) {
@@ -328,9 +343,6 @@ void execute_query(int table_number, int operation_number) {
         }
         if (operation_number == 1) {
             int id = input_selected_id();
-            if (id != -1) {
-                createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
-            }
             s = select_status_event(db, s, id);
             if (s == NULL) {
                 printf("Status event not found\n");
@@ -355,14 +367,13 @@ void execute_query(int table_number, int operation_number) {
                 } else {
                     printf("Status event inserted\n");
                 }
-                free(data);
             }
+            free(data);
         } else if (operation_number == 3) {
             int id = input_id("status event");
             if (id == -1) {
                 printf("Invalid input\n");
             } else {
-                createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
                 if (select_status_event(db, s, id) == NULL) {
                     printf("Status event not found\n");
                 } else {
@@ -377,11 +388,23 @@ void execute_query(int table_number, int operation_number) {
                         } else {
                             printf("Status event updated\n");
                         }
-                        free(data);
                     }
+                    free(data);
                 }
             }
         } else if (operation_number == 4) {
+            int id = input_id("status event");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                int status = delete_status_event(db, s, id);
+                if (status == 0) {
+                    printf("Status event not found\n");
+                } else {
+                    printf("Status event deleted\n");
+                }
+                createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+            }
         }
         free(s);
     }
