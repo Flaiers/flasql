@@ -208,14 +208,41 @@ void execute_query(int table_number, int operation_number) {
         } else if (operation_number == 2) {
             module *data = malloc(sizeof(module));
             data = input_module(data);
-            int status = insert_module(db, m, data);
-            if (status == 0) {
-                printf("Module already exists\n");
+            if (data == NULL) {
+                printf("Invalid input\n");
             } else {
-                printf("Module inserted\n");
+                int status = insert_module(db, m, data);
+                if (status == 0) {
+                    printf("Module already exists\n");
+                } else {
+                    printf("Module inserted\n");
+                }
+                free(data);
             }
-            free(data);
         } else if (operation_number == 3) {
+            int id = input_id("module");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                createidx(db, module_entity, sizeof(module), m, get_module_id);
+                if (select_module(db, m, id) == NULL) {
+                    printf("Module not found\n");
+                } else {
+                    module *data = malloc(sizeof(module));
+                    data = input_module(data);
+                    if (data == NULL) {
+                        printf("Invalid input\n");
+                    } else {
+                        int status = update_module(db, m, data, id);
+                        if (status == 0) {
+                            printf("Module not found\n");
+                        } else {
+                            printf("Module updated\n");
+                        }
+                        free(data);
+                    }
+                }
+            }
         } else if (operation_number == 4) {
         }
         free(m);
@@ -250,14 +277,41 @@ void execute_query(int table_number, int operation_number) {
         } else if (operation_number == 2) {
             level *data = malloc(sizeof(level));
             data = input_level(data);
-            int status = insert_level(db, l, data);
-            if (status == 0) {
-                printf("Level already exists\n");
+            if (data == NULL) {
+                printf("Invalid input\n");
             } else {
-                printf("Level inserted\n");
+                int status = insert_level(db, l, data);
+                if (status == 0) {
+                    printf("Level already exists\n");
+                } else {
+                    printf("Level inserted\n");
+                }
+                free(data);
             }
-            free(data);
         } else if (operation_number == 3) {
+            int id = input_id("level");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                createidx(db, level_entity, sizeof(level), l, get_level_id);
+                if (select_level(db, l, id) == NULL) {
+                    printf("Level not found\n");
+                } else {
+                    level *data = malloc(sizeof(level));
+                    data = input_level(data);
+                    if (data == NULL) {
+                        printf("Invalid input\n");
+                    } else {
+                        int status = update_level(db, l, data, id);
+                        if (status == 0) {
+                            printf("Level not found\n");
+                        } else {
+                            printf("Level updated\n");
+                        }
+                        free(data);
+                    }
+                }
+            }
         } else if (operation_number == 4) {
         }
         free(l);
@@ -279,7 +333,7 @@ void execute_query(int table_number, int operation_number) {
             }
             s = select_status_event(db, s, id);
             if (s == NULL) {
-                printf("Level not found\n");
+                printf("Status event not found\n");
             } else {
                 if (id == -1) {
                     for (int i = 0; s[i].id != -1; i++) {
@@ -292,14 +346,41 @@ void execute_query(int table_number, int operation_number) {
         } else if (operation_number == 2) {
             status_event *data = malloc(sizeof(status_event));
             data = input_status_event(data);
-            int status = insert_status_event(db, s, data);
-            if (status == 0) {
-                printf("Status event already exists\n");
+            if (data == NULL) {
+                printf("Invalid input\n");
             } else {
-                printf("Status event inserted\n");
+                int status = insert_status_event(db, s, data);
+                if (status == 0) {
+                    printf("Status event already exists\n");
+                } else {
+                    printf("Status event inserted\n");
+                }
+                free(data);
             }
-            free(data);
         } else if (operation_number == 3) {
+            int id = input_id("status event");
+            if (id == -1) {
+                printf("Invalid input\n");
+            } else {
+                createidx(db, status_event_entity, sizeof(status_event), s, get_status_event_id);
+                if (select_status_event(db, s, id) == NULL) {
+                    printf("Status event not found\n");
+                } else {
+                    status_event *data = malloc(sizeof(status_event));
+                    data = input_status_event(data);
+                    if (data == NULL) {
+                        printf("Invalid input\n");
+                    } else {
+                        int status = update_status_event(db, s, data, id);
+                        if (status == 0) {
+                            printf("Status event not found\n");
+                        } else {
+                            printf("Status event updated\n");
+                        }
+                        free(data);
+                    }
+                }
+            }
         } else if (operation_number == 4) {
         }
         free(s);
